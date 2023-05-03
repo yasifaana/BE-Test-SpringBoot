@@ -3,7 +3,9 @@ package com.test.be.controller;
 import com.test.be.entity.User;
 import com.test.be.entity.UserSettings;
 import com.test.be.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +14,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/v1")
-public class UserController {
+public class UserController implements ErrorController {
 
     @Autowired
     private UserService service;
@@ -31,7 +33,7 @@ public class UserController {
     }
 
     @GetMapping("/users/{id}")
-    public HashMap<Object, Object> userById(@PathVariable(name = "id") int id) throws Exception {
+    public HashMap<Object, Object> userById(@PathVariable(name = "id") int id) {
         User getUser = service.getUserDataID(id);
         List<UserSettings> getUserSettings = service.getUserSettingsID(id);
         return service.showUserandSetting(getUser, getUserSettings);
@@ -39,19 +41,19 @@ public class UserController {
 
     @PostMapping("/users")
     @ResponseStatus(HttpStatus.CREATED)
-    public HashMap<Object, Object> addUser(@RequestBody User user) throws Exception {
+    public HashMap<Object, Object> addUser(@RequestBody @Valid User user) throws Exception {
         return service.addNewUser(user);
     }
 
     @PutMapping("/users/{id}")
     public HashMap<Object, Object> updateUser(@PathVariable(name = "id") int id,
-                                              @RequestBody User user) throws Exception {
+                                              @RequestBody @Valid User user) throws Exception {
         return service.updateDataUser(id, user);
     }
 
     @PutMapping("/users/{id}/settings")
     public HashMap<Object, Object> updateSettings(@PathVariable(name = "id") int id,
-                                                  @RequestBody ArrayList<HashMap<String, String>> userSettings) throws Exception {
+                                                  @RequestBody ArrayList<HashMap<String, String>> userSettings) {
         return service.updateUserSettings(id, userSettings);
     }
 

@@ -5,15 +5,18 @@ import com.test.be.entity.UserSettings;
 import com.test.be.repository.UserRepository;
 import com.test.be.repository.UserSettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.MethodParameter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 public class UserService {
@@ -36,15 +39,13 @@ public class UserService {
             if(repoUser.getUserBySSN(leftPad)==null){
                 user.setSsn(leftPad);
             } else {
-                throw new Exception("SSN Already used");
+                throw new HttpClientErrorException(HttpStatus.CONFLICT, checkSsn);
             }
         }
 
-        checkSpecialChar(user.getFirst_name());
-        checkSpecialChar(user.getMiddle_name());
-        checkSpecialChar(user.getFamily_name());
-
-        checkAge(user.getBirth_date());
+        if(user.getBirth_date()!=null) {
+            checkAge(user.getBirth_date());
+        }
 
         repoUser.save(user);
 
@@ -68,23 +69,13 @@ public class UserService {
         return showAll;
     }
 
-    private void checkAge(LocalDate birth_date) throws Exception {
+    private void checkAge(LocalDate birth_date) throws MethodArgumentNotValidException {
         int countAge = Year.now().getValue() - birth_date.getYear();
         if(countAge > 100){
-            throw new Exception("CANNOT BE OLDER THAN 100 YEARS");
+            throw new MethodArgumentNotValidException((MethodParameter) null, new BeanPropertyBindingResult(birth_date,"birth_date"));
         }
     }
 
-    public void checkSpecialChar(String name) throws Exception {
-        if (name != null){
-            Pattern pattern = Pattern.compile("[^a-zA-Z]");
-            Matcher matcher = pattern.matcher(name);
-            boolean check = matcher.find();
-            if(check){
-                throw new Exception("There is a special character in your first name");
-            }
-        }
-    }
 
     public HashMap<Object, Object> updateDataUser(int id, User user) throws Exception {
         if(!(repoUser.findById(id).isEmpty()) && repoUser.findById(id).get().isIs_active()){
@@ -94,11 +85,8 @@ public class UserService {
             dataFixed.setUpdated_by(user.getUpdated_by());
             dataFixed.setUpdated_time(user.getUpdated_time());
 
-            checkSpecialChar(user.getFirst_name());
             dataFixed.setFirst_name(user.getFirst_name());
-            checkSpecialChar(user.getFamily_name());
             dataFixed.setFamily_name(user.getFamily_name());
-            checkSpecialChar(user.getMiddle_name());
             dataFixed.setMiddle_name(user.getMiddle_name());
 
             checkAge(user.getBirth_date());
@@ -109,11 +97,11 @@ public class UserService {
             return showUserandSetting(dataFixed, repoSetting.findByIdUser(id));
 
         } else {
-            throw new Exception("ID NOT FOUND");
+            throw new NullPointerException(Integer.toString(id));
         }
     }
 
-    public HashMap<Object, Object> updateUserSettings(int id, ArrayList<HashMap<String, String>> userSettings) throws Exception {
+    public HashMap<Object, Object> updateUserSettings(int id, ArrayList<HashMap<String, String>> userSettings) {
         if(repoUser.findById(id).get().isIs_active()){
             List<UserSettings> settingsFixed = repoSetting.findByIdUser(id);
             for(int i=0;i<settingsFixed.size();i++){
@@ -122,7 +110,7 @@ public class UserService {
             repoSetting.saveAll(settingsFixed);
             return showUserandSetting(repoUser.findById(id).get(),settingsFixed);
         } else{
-            throw new Exception("ID NOT FOUND");
+            throw new NullPointerException(Integer.toString(id));
         }
     }
 
@@ -136,23 +124,31 @@ public class UserService {
     }
 
     public HashMap<Object, Object> activateUser(int id) {
-        User dataFixed = repoUser.findById(id).get();
-        dataFixed.setIs_active(true);
-        dataFixed.setDeleted_time(null);
-        repoUser.save(dataFixed);
-        return showUserandSetting(repoUser.findById(id).get(), getUserSettingsID(id));
+        if(!repoUser.findById(id).isEmpty()){
+            User dataFixed = repoUser.findById(id).get();
+            dataFixed.setIs_active(true);
+            dataFixed.setDeleted_time(null);
+            repoUser.save(dataFixed);
+            return showUserandSetting(repoUser.findById(id).get(), getUserSettingsID(id));
+        } else{
+            throw new NullPointerException(Integer.toString(id));
+        }
     }
 
-    public User getUserDataID(int id) throws Exception {
+    public User getUserDataID(int id) {
         if(!(repoUser.findById(id).isEmpty()) && repoUser.findById(id).get().isIs_active()) {
             return repoUser.findById(id).get();
         } else{
-            throw new Exception("ID NOT FOUND");
+            throw new NullPointerException(Integer.toString(id));
         }
     }
 
     public List<UserSettings> getUserSettingsID(int id) {
-        return repoSetting.findByIdUser(id);
+        if(!repoSetting.findByIdUser(id).isEmpty()) {
+            return repoSetting.findByIdUser(id);
+        } else{
+            throw new NullPointerException(Integer.toString(id));
+        }
     }
 
 }

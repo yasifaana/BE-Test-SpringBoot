@@ -1,9 +1,13 @@
 package com.test.be.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -19,19 +23,28 @@ public class User {
     private Integer id;
 
     @Column(nullable = false, unique = true, length = 16)
+    @NotBlank(message = "Invalid value field ssn, rejected value: ")
+    @Length(max = 16, message = "Invalid value field ssn, rejected value: ")
+    @Pattern(regexp = "^[0-9]*$", message = "Invalid value field ssn, rejected value: ")
     private String ssn;
 
     @Column(nullable = false)
-    @Size(min = 3, max = 100)
+    @NotBlank(message = "Invalid value field first_name, rejected value: ")
+    @Size(min = 3, max = 100, message = "Invalid value field first_name, rejected value: ")
+    @Pattern(regexp = "^[a-zA-Z]*$", message = "Invalid value field first_name, rejected value: ")
     private String first_name;
 
-    @Size(min = 3, max = 100)
+    @Size(min = 3, max = 100, message = "Invalid value field middle_name, rejected value: ")
+    @Pattern(regexp = "^[a-zA-Z]*$", message = "Invalid value field middle_name, rejected value: ")
     private String middle_name;
 
     @Column(nullable = false)
-    @Size(min = 3, max = 100)
+    @NotBlank(message = "Invalid value field family_name, rejected value: ")
+    @Size(min = 3, max = 100, message = "Invalid value field family_name, rejected value: ")
+    @Pattern(regexp = "^[a-zA-Z]*$", message = "Invalid value field family_name, rejected value: ")
     private String  family_name;
 
+    @Past(message = "Invalid value field birth_date, rejected value: ")
     private LocalDate birth_date;
 
     @CreationTimestamp
